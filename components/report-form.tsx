@@ -14,10 +14,35 @@ const severityOptions: Array<{ value: Severity; label: string; helper: string; i
 ];
 
 function getDeviceId() {
-  const existing = window.localStorage.getItem("hanu-device-id");
-  if (existing) return existing;
-  const value = window.crypto.randomUUID();
-  window.localStorage.setItem("hanu-device-id", value);
+  const storageKey = "hanu-device-id";
+
+  try {
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing) return existing;
+  } catch {
+    // Private browsing modes can deny access to localStorage.
+  }
+
+  const randomBytes = new Uint8Array(16);
+  if (window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(randomBytes);
+  } else {
+    for (let index = 0; index < randomBytes.length; index += 1) {
+      randomBytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  randomBytes[6] = (randomBytes[6] & 0x0f) | 0x40;
+  randomBytes[8] = (randomBytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, "0"));
+  const value = `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+
+  try {
+    window.localStorage.setItem(storageKey, value);
+  } catch {
+    // The ID still works for this submission when storage is unavailable.
+  }
+
   return value;
 }
 
@@ -68,19 +93,28 @@ export default function ReportForm() {
     if (!valid || submitting) return;
     setSubmitting(true);
     setError("");
-    const data = new FormData();
-    data.set("areaId", areaId);
-    data.set("severity", severity);
-    data.set("reporterName", reporterName.trim());
-    data.set("description", description.trim());
-    data.set("occurredAt", new Date(occurredAt).toISOString());
-    data.set("deviceId", getDeviceId());
-    if (image) data.set("image", image);
-    const response = await fetch("/api/reports", { method: "POST", body: data });
-    const result = await response.json();
-    if (!response.ok) { setError(result.error || "Chưa thể đăng báo cáo."); setSubmitting(false); return; }
-    setSuccess(true);
-    setSubmitting(false);
+    try {
+      const data = new FormData();
+      data.set("areaId", areaId);
+      data.set("severity", severity);
+      data.set("reporterName", reporterName.trim());
+      data.set("description", description.trim());
+      data.set("occurredAt", new Date(occurredAt).toISOString());
+      data.set("deviceId", getDeviceId());
+      if (image) data.set("image", image);
+
+      const response = await fetch("/api/reports", { method: "POST", body: data });
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.error || "Chưa thể đăng báo cáo.");
+        return;
+      }
+      setSuccess(true);
+    } catch {
+      setError("Kết nối bị gián đoạn. Vui lòng thử đăng lại.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (success) return (
