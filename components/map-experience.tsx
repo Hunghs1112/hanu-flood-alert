@@ -104,7 +104,7 @@ function addAreaLayers(map: MapInstance, areas: AreaStatus[]) {
     type: "symbol",
     source: "flood-areas",
     filter: ["!", ["has", "point_count"]],
-    layout: { "text-field": ["to-string", ["get", "count"]], "text-size": 13, "text-font": ["Open Sans Bold"] },
+    layout: { "text-field": ["to-string", ["get", "count"]], "text-size": 13, "text-font": ["Noto Sans Bold"] },
     paint: { "text-color": "#fff", "text-halo-color": "rgba(0,0,0,.25)", "text-halo-width": 1 }
   });
   map.addLayer({
