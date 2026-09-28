@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
-import type { GeoJSONSource, Map as MapInstance, MapLayerMouseEvent } from "maplibre-gl";
-import { Crosshair, Home, Info, Minus, Plus, Search, X } from "lucide-react";
+import type { GeoJSONSource, Map as MapInstance, Marker } from "maplibre-gl";
+import { Crosshair, Home, Info, MapPin, Minus, Plus, Search, X } from "lucide-react";
 import type { AreaStatus } from "@/lib/types";
 import { StatusChip, STATUS_META, timeAgo } from "./status";
 
@@ -118,15 +118,25 @@ function addAreaLayers(map: MapInstance, areas: AreaStatus[]) {
   });
 }
 
-export default function MapExperience() {
+function createClickedMarker() {
+  const element = document.createElement("div");
+  element.className = "map-click-pin";
+  const core = document.createElement("span");
+  element.appendChild(core);
+  return element;
+}
+
+export default function MapExperience({ controlsVisible = true }: { controlsVisible?: boolean }) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapInstance | null>(null);
+  const pickedMarkerRef = useRef<Marker | null>(null);
   const areasRef = useRef<AreaStatus[]>([]);
   const [areas, setAreas] = useState<AreaStatus[]>([]);
   const [selected, setSelected] = useState<AreaStatus | null>(null);
   const [query, setQuery] = useState("");
   const [legend, setLegend] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pickedPoint, setPickedPoint] = useState<[number, number] | null>(null);
 
   const loadAreas = useCallback(async () => {
     const response = await fetch("/api/areas", { cache: "no-store" });
@@ -159,23 +169,58 @@ export default function MapExperience() {
       setLoading(false);
       addAreaLayers(map, data.areas);
     });
-    map.on("click", "area-bubbles", (event: MapLayerMouseEvent) => {
-      const feature = event.features?.[0];
-      const id = feature?.properties?.id;
-      const area = areasRef.current.find((item) => item.id === id);
-      if (area) setSelected(area);
-    });
-    map.on("click", "clusters", (event: MapLayerMouseEvent) => {
-      const coordinates = (event.features?.[0]?.geometry as { coordinates?: [number, number] })?.coordinates;
-      if (coordinates) map.easeTo({ center: coordinates, zoom: Math.min(map.getZoom() + 2, 16), duration: 650 });
+    map.on("click", (event) => {
+      const clickableLayers = ["area-bubbles", "clusters"].filter((layer) => map.getLayer(layer));
+      const feature = clickableLayers.length
+        ? map.queryRenderedFeatures(event.point, { layers: clickableLayers })[0]
+        : undefined;
+      if (feature?.layer.id === "area-bubbles") {
+        const area = areasRef.current.find((item) => item.id === feature.properties?.id);
+        if (area) {
+          pickedMarkerRef.current?.remove();
+          pickedMarkerRef.current = null;
+          setPickedPoint(null);
+          setSelected(area);
+        }
+        return;
+      }
+      if (feature?.layer.id === "clusters") {
+        const coordinates = (feature.geometry as { coordinates?: [number, number] }).coordinates;
+        if (coordinates) map.easeTo({ center: coordinates, zoom: Math.min(map.getZoom() + 2, 16), duration: 650 });
+        return;
+      }
+
+      const coordinates: [number, number] = [event.lngLat.lng, event.lngLat.lat];
+      if (!pickedMarkerRef.current) {
+        pickedMarkerRef.current = new maplibregl.Marker({ element: createClickedMarker(), anchor: "center" })
+          .setLngLat(coordinates)
+          .addTo(map);
+      } else {
+        pickedMarkerRef.current.setLngLat(coordinates);
+      }
+      setSelected(null);
+      setPickedPoint(coordinates);
     });
     for (const layer of ["area-bubbles", "clusters"]) {
       map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
     }
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    return () => { pickedMarkerRef.current?.remove(); map.remove(); mapRef.current = null; };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const applyLayout = () => {
+      const panelWidth = !controlsVisible && window.innerWidth > 900 ? 500 : 0;
+      map.easeTo({ padding: { left: panelWidth, right: 0, top: 0, bottom: 0 }, duration: 320 });
+      map.resize();
+    };
+    applyLayout();
+    window.addEventListener("resize", applyLayout);
+    return () => window.removeEventListener("resize", applyLayout);
+  }, [controlsVisible]);
 
   useEffect(() => {
     if (!mapRef.current || !selected) return;
@@ -186,6 +231,9 @@ export default function MapExperience() {
   const summary = useMemo(() => areas.reduce((acc, area) => ({ ...acc, [area.status]: acc[area.status] + 1 }), { HEAVY: 0, LIGHT: 0, DRY: 0, UNKNOWN: 0 }), [areas]);
 
   function focusArea(area: AreaStatus) {
+    pickedMarkerRef.current?.remove();
+    pickedMarkerRef.current = null;
+    setPickedPoint(null);
     setSelected(area);
     setQuery("");
   }
@@ -195,8 +243,9 @@ export default function MapExperience() {
   }
 
   return (
-    <section className="map-page">
+    <section className={`map-page ${controlsVisible ? "map-active" : "map-background"}`}>
       <div ref={container} className="map-canvas" aria-label="Bản đồ tình trạng ngập quanh HANU" />
+      {controlsVisible ? <>
       <div className="map-mobile-brand glass"><span>HANU <b>PULSE</b></span><small>{loading ? "Đang cập nhật" : "Cộng đồng trực tuyến"}</small></div>
       <div className="map-search-wrap">
         <div className="map-search glass"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm khu vực quanh HANU..." aria-label="Tìm khu vực" />{query ? <button onClick={() => setQuery("")} aria-label="Xóa tìm kiếm"><X size={18} /></button> : null}</div>
@@ -210,7 +259,7 @@ export default function MapExperience() {
       </div>
       <button className="legend-toggle glass-clear" onClick={() => setLegend((value) => !value)} aria-label="Chú thích bản đồ"><Info size={19} /></button>
       {legend ? <div className="map-legend glass"><strong>Chú thích</strong>{(["HEAVY", "LIGHT", "DRY", "UNKNOWN"] as const).map((status) => <div key={status}><span className={`legend-dot ${STATUS_META[status].className}`} />{STATUS_META[status].label}</div>)}<small>Chấm lớn hơn = nhiều người báo cáo hơn</small></div> : null}
-      <aside className={`area-sheet glass ${selected ? "selected" : ""}`}>
+      <aside className={`area-sheet glass ${selected || pickedPoint ? "selected" : ""}`}>
         <div className="sheet-handle" />
         {selected ? <>
           <button className="sheet-close" onClick={() => setSelected(null)} aria-label="Đóng"><X size={18} /></button>
@@ -219,6 +268,13 @@ export default function MapExperience() {
           <div className="sheet-status-row"><StatusChip status={selected.status} /><span>{timeAgo(selected.latestReportAt)}</span></div>
           <div className="sheet-metrics"><div><strong>{selected.recentReporterCount}</strong><span>người báo</span></div><div><strong>{selected.recentReportCount}</strong><span>bài gần đây</span></div></div>
           <div className="sheet-actions"><Link className="primary-button" href={`/report?area=${selected.id}`}>Cập nhật tình trạng</Link><Link className="secondary-button" href={`/area/${selected.slug}`}>Xem lịch sử</Link></div>
+        </> : pickedPoint ? <>
+          <button className="sheet-close" onClick={() => { pickedMarkerRef.current?.remove(); pickedMarkerRef.current = null; setPickedPoint(null); }} aria-label="Đóng"><X size={18} /></button>
+          <div className="eyebrow"><MapPin size={14} /> ĐIỂM ĐÃ CHỌN</div>
+          <h1>Vị trí trên bản đồ</h1>
+          <p className="picked-coordinates">{pickedPoint[1].toFixed(6)}, {pickedPoint[0].toFixed(6)}</p>
+          <p>Điểm ghim đã sẵn sàng để bạn gửi tình trạng ngập tại đúng vị trí này.</p>
+          <Link className="primary-button point-report-button" href={`/report?lat=${pickedPoint[1]}&lng=${pickedPoint[0]}`}>Đăng báo cáo tại đây</Link>
         </> : <>
           <div className="eyebrow">CẬP NHẬT QUANH HANU</div>
           <h1>Nhìn nhanh trước khi đi</h1>
@@ -226,6 +282,7 @@ export default function MapExperience() {
           <p>Chạm vào một chấm để xem báo cáo và lịch sử khu vực.</p>
         </>}
       </aside>
+      </> : null}
     </section>
   );
 }

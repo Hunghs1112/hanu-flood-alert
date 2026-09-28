@@ -3,6 +3,7 @@ import "@fontsource-variable/manrope";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { DesktopNav, MobileNav } from "@/components/navigation";
+import { AppMapShell } from "@/components/app-map-shell";
 
 export const metadata: Metadata = {
   title: "HANU Pulse — Bản đồ ngập cộng đồng",
@@ -15,7 +16,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="vi">
       <body>
         <DesktopNav />
-        <main>{children}</main>
+        <main><AppMapShell>{children}</AppMapShell></main>
         <MobileNav />
       </body>
     </html>

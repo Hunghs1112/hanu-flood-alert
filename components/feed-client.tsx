@@ -5,7 +5,6 @@ import { Filter, LoaderCircle } from "lucide-react";
 import { AREAS } from "@/lib/areas";
 import type { FloodReport, Severity } from "@/lib/types";
 import { ReportCard } from "./report-card";
-import { PageMapBackdrop } from "./page-map-backdrop";
 
 type FilterValue = "ALL" | Severity;
 
@@ -27,7 +26,7 @@ export default function FeedClient() {
   ];
 
   return (
-    <div className="split-page"><PageMapBackdrop /><div className="side-panel feed-shell">
+    <div className="split-page"><div className="side-panel feed-shell">
       <section className="feed-main">
         <header className="page-heading"><div className="eyebrow">CỘNG ĐỒNG QUANH HANU</div><h1>Feed tình trạng</h1><p>Ảnh và cập nhật mới nhất từ mọi người trong khu vực.</p></header>
         <div className="filter-bar glass"><Filter size={17} />{filters.map((item) => <button key={item.value} className={filter === item.value ? "active" : ""} onClick={() => setFilter(item.value)}>{item.label}</button>)}</div>

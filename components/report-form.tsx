@@ -14,6 +14,14 @@ const severityOptions: Array<{ value: Severity; label: string; helper: string; i
   { value: "DRY", label: "Đã khô", helper: "Nước đã rút, đường ổn định", icon: "🟢" }
 ];
 
+function getNearestArea(coordinates: [number, number]) {
+  return [...AREAS].sort((a, b) => {
+    const distanceA = Math.hypot(a.coordinates[0] - coordinates[0], a.coordinates[1] - coordinates[1]);
+    const distanceB = Math.hypot(b.coordinates[0] - coordinates[0], b.coordinates[1] - coordinates[1]);
+    return distanceA - distanceB;
+  })[0];
+}
+
 function getDeviceId() {
   const storageKey = "hanu-device-id";
 
@@ -51,11 +59,18 @@ export default function ReportForm() {
   const router = useRouter();
   const search = useSearchParams();
   const initialArea = search.get("area");
-  const [areaId, setAreaId] = useState(initialArea && AREAS.some((area) => area.id === initialArea) ? initialArea : "");
-  const [coordinates, setCoordinates] = useState<[number, number] | null>(() => {
+  const initialCoordinates = (() => {
+    const latitude = Number.parseFloat(search.get("lat") ?? "");
+    const longitude = Number.parseFloat(search.get("lng") ?? "");
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) return [longitude, latitude] as [number, number];
     const area = AREAS.find((item) => item.id === initialArea);
     return area ? area.coordinates : null;
+  })();
+  const [areaId, setAreaId] = useState(() => {
+    if (initialArea && AREAS.some((area) => area.id === initialArea)) return initialArea;
+    return initialCoordinates ? getNearestArea(initialCoordinates).id : "";
   });
+  const [coordinates, setCoordinates] = useState<[number, number] | null>(initialCoordinates);
   const [severity, setSeverity] = useState<Severity | "">("");
   const [reporterName, setReporterName] = useState("");
   const [description, setDescription] = useState("");
@@ -71,17 +86,9 @@ export default function ReportForm() {
 
   const valid = useMemo(() => Boolean(areaId && severity && reporterName.trim().length >= 2), [areaId, severity, reporterName]);
 
-  function nearestArea(coordinates: [number, number]) {
-    return [...AREAS].sort((a, b) => {
-      const distanceA = Math.hypot(a.coordinates[0] - coordinates[0], a.coordinates[1] - coordinates[1]);
-      const distanceB = Math.hypot(b.coordinates[0] - coordinates[0], b.coordinates[1] - coordinates[1]);
-      return distanceA - distanceB;
-    })[0];
-  }
-
   function chooseCoordinates(nextCoordinates: [number, number]) {
     setCoordinates(nextCoordinates);
-    setAreaId(nearestArea(nextCoordinates).id);
+    setAreaId(getNearestArea(nextCoordinates).id);
     setError("");
   }
 
