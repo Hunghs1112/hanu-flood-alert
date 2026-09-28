@@ -24,12 +24,11 @@ export function DesktopNav() {
 
 export function MobileNav() {
   const pathname = usePathname();
-  if (pathname.startsWith("/report")) return null;
   return (
     <nav className="mobile-nav glass" aria-label="Điều hướng chính">
-      <Link className={pathname === "/" || pathname.startsWith("/area") ? "active" : ""} href="/"><Map /><span>Bản đồ</span></Link>
-      <Link className="mobile-create" href="/report" aria-label="Đăng bài"><Plus /><span>Đăng bài</span></Link>
-      <Link className={pathname.startsWith("/feed") ? "active" : ""} href="/feed"><Newspaper /><span>Feed</span></Link>
+      <Link aria-label="Bản đồ" title="Bản đồ" className={pathname === "/" || pathname.startsWith("/area") ? "active" : ""} href="/"><Map /><span>Bản đồ</span></Link>
+      <Link className={`mobile-create ${pathname.startsWith("/report") ? "active" : ""}`} href="/report" aria-label="Đăng bài" title="Đăng bài"><Plus /><span>Đăng bài</span></Link>
+      <Link aria-label="Feed" title="Feed" className={pathname.startsWith("/feed") ? "active" : ""} href="/feed"><Newspaper /><span>Feed</span></Link>
     </nav>
   );
 }

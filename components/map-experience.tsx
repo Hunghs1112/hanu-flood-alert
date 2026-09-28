@@ -137,6 +137,7 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
   const [legend, setLegend] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pickedPoint, setPickedPoint] = useState<[number, number] | null>(null);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const loadAreas = useCallback(async () => {
     const response = await fetch("/api/areas", { cache: "no-store" });
@@ -225,6 +226,7 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
     setPickedPoint(null);
     setSelected(area);
     setQuery("");
+    setMobileSearchOpen(false);
   }
 
   function geolocate() {
@@ -252,12 +254,14 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
       <div ref={container} className="map-canvas" aria-label="Bản đồ tình trạng ngập quanh HANU" />
       {controlsVisible ? <>
       <div className="map-mobile-brand glass"><span>HANU <b>PULSE</b></span><small>{loading ? "Đang cập nhật" : "Cộng đồng trực tuyến"}</small></div>
-      <div className="map-search-wrap">
-        <div className="map-search glass"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm khu vực quanh HANU..." aria-label="Tìm khu vực" />{query ? <button onClick={() => setQuery("")} aria-label="Xóa tìm kiếm"><X size={18} /></button> : null}</div>
+      <button className={`mobile-search-toggle glass ${mobileSearchOpen ? "hidden" : ""}`} onClick={() => setMobileSearchOpen(true)} aria-label="Mở tìm kiếm"><Search size={20} /></button>
+      <div className={`map-search-wrap ${mobileSearchOpen ? "mobile-open" : ""}`}>
+        <div className="map-search glass"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm khu vực quanh HANU..." aria-label="Tìm khu vực" />{query ? <button onClick={() => setQuery("")} aria-label="Xóa tìm kiếm"><X size={18} /></button> : <button className="mobile-search-close" onClick={() => setMobileSearchOpen(false)} aria-label="Đóng tìm kiếm"><X size={18} /></button>}</div>
         {matches.length ? <div className="search-results glass">{matches.map((area) => <button key={area.id} onClick={() => focusArea(area)}><span className={`mini-dot ${STATUS_META[area.status].className}`} /> <span>{area.name}<small>{STATUS_META[area.status].label} · {area.recentReporterCount} người</small></span></button>)}</div> : null}
       </div>
       {!selected && !pickedPoint ? <div className="main-map-center-target" aria-hidden="true"><span /></div> : null}
-      <div className="map-controls glass-clear">
+      {!selected && !pickedPoint ? <button className="mobile-pin-center" onClick={pinMapCenter}><Crosshair size={18} /><span>Đặt ghim</span></button> : null}
+      <div className={`map-controls glass-clear ${selected || pickedPoint ? "has-selection" : ""}`}>
         <button onClick={() => mapRef.current?.zoomIn()} aria-label="Phóng to"><Plus /></button>
         <button onClick={() => mapRef.current?.zoomOut()} aria-label="Thu nhỏ"><Minus /></button>
         <button onClick={geolocate} aria-label="Vị trí của tôi"><Crosshair /></button>
