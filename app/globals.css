@@ -153,6 +153,15 @@ main { min-height: 100vh; }
 .field-label small { color: var(--muted); }
 .field-label select option { background: var(--ink-850); }
 .locate-button { width: 100%; min-height: 48px; margin-bottom: 12px; border: 1px solid rgba(56,189,248,.24); border-radius: 15px; background: rgba(56,189,248,.09); color: #bceaff; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font-weight: 750; }
+.location-picker { position: relative; height: 290px; margin-bottom: 10px; overflow: hidden; border: 1px solid rgba(125,211,252,.22); border-radius: 20px; background: var(--ink-700); box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); }
+.location-picker-map { position: absolute; inset: 0; }
+.location-picker::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(7,11,20,.2), transparent 24%, transparent 70%, rgba(7,11,20,.3)); }
+.location-picker-hint { position: absolute; z-index: 3; top: 10px; left: 10px; right: 10px; min-height: 38px; padding: 8px 11px; border-radius: 13px; display: flex; align-items: center; justify-content: center; gap: 7px; color: #e3f6ff; font-size: .76rem; font-weight: 750; pointer-events: none; }
+.location-picker-hint svg { color: var(--coral); flex: 0 0 auto; }
+.location-picker-coordinates { position: absolute; z-index: 3; left: 10px; bottom: 10px; padding: 7px 9px; border-radius: 10px; background: rgba(7,11,20,.78); color: #b8c7d9; font: 650 .68rem/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; backdrop-filter: blur(10px); }
+.location-picker .maplibregl-ctrl-bottom-right { z-index: 4; }
+.location-picker .maplibregl-ctrl-group { overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(7,11,20,.78); box-shadow: none; }
+.location-picker .maplibregl-ctrl button { width: 36px; height: 36px; filter: invert(1); }
 .severity-grid { display: grid; gap: 9px; }
 .severity-grid button { min-height: 68px; border: 1px solid rgba(255,255,255,.09); border-radius: 17px; padding: 12px 14px; background: rgba(255,255,255,.045); display: grid; grid-template-columns: 30px 1fr 22px; align-items: center; text-align: left; cursor: pointer; }
 .severity-grid button:hover { background: rgba(255,255,255,.07); }
@@ -218,6 +227,7 @@ main { min-height: 100vh; }
 @media (max-width: 520px) {
   .report-card { padding: 15px; border-radius: 22px; }.report-head { grid-template-columns: 40px 1fr auto; }.report-head time { max-width: 70px; text-align: right; }
   .form-section { grid-template-columns: 32px 1fr; padding: 16px 14px; gap: 8px; }.step { width: 30px; height: 30px; }.form-header h1 { font-size: 1.75rem; }.submit-bar { display: block; }.submit-bar > div { display: none; }.submit-bar button { width: 100%; }
+  .location-picker { height: 250px; border-radius: 18px; }
   .success-actions { width: 100%; flex-direction: column; }.area-hero h1 { font-size: 2.5rem; }.section-heading { align-items: flex-start; flex-direction: column; }
 }
 

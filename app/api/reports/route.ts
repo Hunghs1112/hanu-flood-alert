@@ -26,6 +26,8 @@ export async function POST(request: NextRequest) {
     const occurredAt = String(form.get("occurredAt") || new Date().toISOString());
     const deviceId = String(form.get("deviceId") || randomUUID()).slice(0, 100);
     const area = AREAS.find((item) => item.id === areaId);
+    const submittedLatitude = Number.parseFloat(String(form.get("latitude") || ""));
+    const submittedLongitude = Number.parseFloat(String(form.get("longitude") || ""));
 
     if (!area || reporterName.length < 2 || !["HEAVY", "LIGHT", "DRY"].includes(severity)) {
       return NextResponse.json({ error: "Thông tin báo cáo chưa hợp lệ." }, { status: 400 });
@@ -34,6 +36,13 @@ export async function POST(request: NextRequest) {
     if (+new Date(occurredAt) > Date.now() + 60_000) {
       return NextResponse.json({ error: "Thời gian ghi nhận không thể ở tương lai." }, { status: 400 });
     }
+
+    const hasValidCoordinates = Number.isFinite(submittedLatitude)
+      && Number.isFinite(submittedLongitude)
+      && submittedLatitude >= -90
+      && submittedLatitude <= 90
+      && submittedLongitude >= -180
+      && submittedLongitude <= 180;
 
     let imageUrl: string | undefined;
     const image = form.get("image");
@@ -56,8 +65,8 @@ export async function POST(request: NextRequest) {
       severity,
       description: description || undefined,
       imageUrl,
-      latitude: area.coordinates[1],
-      longitude: area.coordinates[0],
+      latitude: hasValidCoordinates ? submittedLatitude : area.coordinates[1],
+      longitude: hasValidCoordinates ? submittedLongitude : area.coordinates[0],
       occurredAt: new Date(occurredAt).toISOString()
     });
 
