@@ -7,8 +7,9 @@ import { getAreaBySlug } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-export default async function AreaPage({ params }: { params: { slug: string } }) {
-  const data = await getAreaBySlug(params.slug);
+export default async function AreaPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const data = await getAreaBySlug(slug);
   if (!data) notFound();
   const { area, reports } = data;
 

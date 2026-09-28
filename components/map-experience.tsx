@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import maplibregl, { GeoJSONSource, Map as MapInstance } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { GeoJSONSource, Map as MapInstance, MapLayerMouseEvent } from "maplibre-gl";
 import { Crosshair, Home, Info, Minus, Plus, Search, X } from "lucide-react";
 import type { AreaStatus } from "@/lib/types";
 import { StatusChip, STATUS_META, timeAgo } from "./status";
@@ -156,13 +157,13 @@ export default function MapExperience() {
       setLoading(false);
       addAreaLayers(map, data.areas);
     });
-    map.on("click", "area-bubbles", (event) => {
+    map.on("click", "area-bubbles", (event: MapLayerMouseEvent) => {
       const feature = event.features?.[0];
       const id = feature?.properties?.id;
       const area = areasRef.current.find((item) => item.id === id);
       if (area) setSelected(area);
     });
-    map.on("click", "clusters", (event) => {
+    map.on("click", "clusters", (event: MapLayerMouseEvent) => {
       const coordinates = (event.features?.[0]?.geometry as { coordinates?: [number, number] })?.coordinates;
       if (coordinates) map.easeTo({ center: coordinates, zoom: Math.min(map.getZoom() + 2, 16), duration: 650 });
     });
