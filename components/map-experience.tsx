@@ -24,16 +24,16 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
     }
   },
   layers: [
-    { id: "background", type: "background", paint: { "background-color": "#08101f" } },
+    { id: "background", type: "background", paint: { "background-color": "#eef2f4" } },
     {
       id: "osm",
       type: "raster",
       source: "osm",
       paint: {
-        "raster-opacity": 0.7,
-        "raster-saturation": -0.65,
-        "raster-contrast": 0.25,
-        "raster-brightness-max": 0.72
+        "raster-opacity": 0.92,
+        "raster-saturation": -0.25,
+        "raster-contrast": 0.06,
+        "raster-brightness-max": 0.98
       }
     }
   ]
@@ -65,7 +65,7 @@ function addAreaLayers(map: MapInstance, areas: AreaStatus[]) {
     source: "flood-areas",
     filter: ["has", "point_count"],
     paint: {
-      "circle-color": "#8b7cff",
+      "circle-color": "#f97316",
       "circle-radius": ["step", ["get", "point_count"], 24, 4, 32, 8, 40],
       "circle-stroke-color": "rgba(255,255,255,.8)",
       "circle-stroke-width": 2,
@@ -114,7 +114,7 @@ function addAreaLayers(map: MapInstance, areas: AreaStatus[]) {
     minzoom: 14.2,
     filter: ["!", ["has", "point_count"]],
     layout: { "text-field": ["get", "name"], "text-size": 12, "text-offset": [0, 2.7], "text-anchor": "top" },
-    paint: { "text-color": "#f8fafc", "text-halo-color": "#0b1220", "text-halo-width": 2 }
+    paint: { "text-color": "#273449", "text-halo-color": "#ffffff", "text-halo-width": 2 }
   });
 }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "@fontsource-variable/manrope";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { DesktopNav, MobileNav } from "@/components/navigation";

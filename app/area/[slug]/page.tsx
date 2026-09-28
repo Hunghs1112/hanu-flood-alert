@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ReportCard } from "@/components/report-card";
 import { StatusChip, timeAgo } from "@/components/status";
 import { getAreaBySlug } from "@/lib/data";
+import { PageMapBackdrop } from "@/components/page-map-backdrop";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function AreaPage({ params }: { params: Promise<{ slug: str
   const { area, reports } = data;
 
   return (
-    <div className="area-page">
+    <div className="split-page"><PageMapBackdrop center={area.coordinates} /><div className="side-panel area-page">
       <section className={`area-hero ${area.status.toLowerCase()}`}>
         <div className="area-top-actions"><Link href="/" aria-label="Quay lại bản đồ"><ArrowLeft /></Link><button aria-label="Chia sẻ"><Share2 /></button></div>
         <div className="eyebrow"><MapPin size={14} /> TÌNH TRẠNG KHU VỰC</div>
@@ -30,6 +31,6 @@ export default async function AreaPage({ params }: { params: Promise<{ slug: str
         </section>
         <section className="area-feed"><div className="section-heading"><div><div className="eyebrow">BÀI ĐĂNG</div><h2>Cập nhật tại {area.name}</h2></div><Link href={`/feed?area=${area.id}`}>Xem feed</Link></div><div className="feed-list">{reports.slice(0, 4).map((report) => <ReportCard key={report.id} report={report} area={area} compact />)}</div></section>
       </div>
-    </div>
+    </div></div>
   );
 }

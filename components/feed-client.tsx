@@ -5,6 +5,7 @@ import { Filter, LoaderCircle } from "lucide-react";
 import { AREAS } from "@/lib/areas";
 import type { FloodReport, Severity } from "@/lib/types";
 import { ReportCard } from "./report-card";
+import { PageMapBackdrop } from "./page-map-backdrop";
 
 type FilterValue = "ALL" | Severity;
 
@@ -26,7 +27,7 @@ export default function FeedClient() {
   ];
 
   return (
-    <div className="feed-shell">
+    <div className="split-page"><PageMapBackdrop /><div className="side-panel feed-shell">
       <section className="feed-main">
         <header className="page-heading"><div className="eyebrow">CỘNG ĐỒNG QUANH HANU</div><h1>Feed tình trạng</h1><p>Ảnh và cập nhật mới nhất từ mọi người trong khu vực.</p></header>
         <div className="filter-bar glass"><Filter size={17} />{filters.map((item) => <button key={item.value} className={filter === item.value ? "active" : ""} onClick={() => setFilter(item.value)}>{item.label}</button>)}</div>
@@ -39,7 +40,6 @@ export default function FeedClient() {
           {!loading && !shown.length ? <div className="empty-card"><h2>Chưa có bài phù hợp</h2><p>Thử đổi bộ lọc hoặc đăng cập nhật đầu tiên.</p></div> : null}
         </div>
       </section>
-      <aside className="feed-sidebar glass"><div className="eyebrow">KHU VỰC NỔI BẬT</div><h2>Đang được quan tâm</h2>{AREAS.slice(0, 4).map((area, index) => <a href={`/area/${area.slug}`} key={area.id}><span>{index + 1}</span><div><strong>{area.name}</strong><small>Xem tình trạng và lịch sử</small></div></a>)}</aside>
-    </div>
+    </div></div>
   );
 }

@@ -9,6 +9,14 @@ maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 const DEFAULT_CENTER: [number, number] = [105.7952, 20.9914];
 
+function createLocationMarker() {
+  const element = document.createElement("div");
+  element.className = "location-pin";
+  const core = document.createElement("span");
+  element.appendChild(core);
+  return element;
+}
+
 export function LocationPicker({
   value,
   onChange
@@ -53,6 +61,13 @@ export function LocationPicker({
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     map.on("click", (event) => {
       const coordinates: [number, number] = [event.lngLat.lng, event.lngLat.lat];
+      if (!markerRef.current) {
+        markerRef.current = new maplibregl.Marker({ element: createLocationMarker(), anchor: "center" })
+          .setLngLat(coordinates)
+          .addTo(map);
+      } else {
+        markerRef.current.setLngLat(coordinates);
+      }
       onChangeRef.current(coordinates);
     });
     map.getCanvas().style.cursor = "crosshair";
@@ -70,7 +85,7 @@ export function LocationPicker({
     if (!map || !value) return;
 
     if (!markerRef.current) {
-      markerRef.current = new maplibregl.Marker({ color: "#ff6b4a" })
+      markerRef.current = new maplibregl.Marker({ element: createLocationMarker(), anchor: "center" })
         .setLngLat(value)
         .addTo(map);
     } else {
