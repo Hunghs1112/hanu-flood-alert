@@ -106,7 +106,7 @@ export async function getMapPoints(): Promise<MapPointStatus[]> {
       id: `point-${key}`,
       areaId: area.id,
       slug: area.slug,
-      name: area.name,
+      name: group[0].placeName?.split(",")[0]?.trim() || area.name,
       coordinates: [longitude, latitude] as [number, number],
       status: calculateStatus(group),
       recentReporterCount: new Set(group.map((report) => report.deviceId)).size,

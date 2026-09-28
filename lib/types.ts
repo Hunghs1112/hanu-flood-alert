@@ -16,6 +16,7 @@ export type FloodReport = {
   severity: Severity;
   description?: string;
   imageUrl?: string;
+  placeName?: string;
   latitude: number;
   longitude: number;
   occurredAt: string;

@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     const reporterName = String(form.get("reporterName") || "").trim().slice(0, 40);
     const severity = String(form.get("severity") || "") as Severity;
     const description = String(form.get("description") || "").trim().slice(0, 300);
+    const placeName = String(form.get("placeName") || "").trim().slice(0, 180);
     const occurredAt = String(form.get("occurredAt") || new Date().toISOString());
     const deviceId = String(form.get("deviceId") || randomUUID()).slice(0, 100);
     const area = AREAS.find((item) => item.id === areaId);
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
       severity,
       description: description || undefined,
       imageUrl,
+      placeName: placeName || area.name,
       latitude: hasValidCoordinates ? submittedLatitude : area.coordinates[1],
       longitude: hasValidCoordinates ? submittedLongitude : area.coordinates[0],
       occurredAt: new Date(occurredAt).toISOString()

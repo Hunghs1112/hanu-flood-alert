@@ -81,21 +81,37 @@ export default function ReportForm() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [locating, setLocating] = useState(false);
+  const [placeName, setPlaceName] = useState("");
+  const [placeLoading, setPlaceLoading] = useState(false);
 
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
-  const valid = useMemo(() => Boolean(areaId && severity && reporterName.trim().length >= 2), [areaId, severity, reporterName]);
+  useEffect(() => {
+    if (!coordinates) {
+      setPlaceName("");
+      return;
+    }
+    const controller = new AbortController();
+    setPlaceLoading(true);
+    fetch(`/api/reverse-geocode?lat=${coordinates[1]}&lng=${coordinates[0]}`, { signal: controller.signal })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error);
+        setPlaceName(result.placeName);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setPlaceName(`Tọa độ ${coordinates[1].toFixed(5)}, ${coordinates[0].toFixed(5)}`);
+      })
+      .finally(() => { if (!controller.signal.aborted) setPlaceLoading(false); });
+    return () => controller.abort();
+  }, [coordinates]);
+
+  const valid = useMemo(() => Boolean(areaId && coordinates && placeName && !placeLoading && severity && reporterName.trim().length >= 2), [areaId, coordinates, placeName, placeLoading, severity, reporterName]);
 
   function chooseCoordinates(nextCoordinates: [number, number]) {
     setCoordinates(nextCoordinates);
     setAreaId(getNearestArea(nextCoordinates).id);
     setError("");
-  }
-
-  function chooseArea(nextAreaId: string) {
-    setAreaId(nextAreaId);
-    const area = AREAS.find((item) => item.id === nextAreaId);
-    setCoordinates(area?.coordinates ?? null);
   }
 
   function chooseImage(event: ChangeEvent<HTMLInputElement>) {
@@ -126,6 +142,7 @@ export default function ReportForm() {
       data.set("severity", severity);
       data.set("reporterName", reporterName.trim());
       data.set("description", description.trim());
+      data.set("placeName", placeName);
       data.set("occurredAt", new Date(occurredAt).toISOString());
       data.set("deviceId", getDeviceId());
       if (coordinates) {
@@ -162,7 +179,7 @@ export default function ReportForm() {
   return (
     <form className="report-form" onSubmit={submit}>
       <header className="form-header"><button type="button" onClick={() => router.back()} aria-label="Đóng"><X /></button><div><div className="eyebrow">CẬP NHẬT CỘNG ĐỒNG</div><h1>Đăng tình trạng</h1><p>Chia sẻ nhanh trong vài giây, không cần tài khoản.</p></div></header>
-      <section className="form-section"><div className="step">1</div><div className="form-section-body"><h2>Chọn vị trí trên bản đồ</h2><LocationPicker value={coordinates} onChange={chooseCoordinates} /><button className="locate-button" type="button" onClick={findNearestArea}>{locating ? <LoaderCircle className="spin" /> : <Crosshair />} {locating ? "Đang tìm vị trí..." : "Đặt ghim tại vị trí hiện tại"}</button><label className="field-label">Khu vực gần nhất<select value={areaId} onChange={(event) => chooseArea(event.target.value)}><option value="">Chọn khu vực</option>{AREAS.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select><small>Chạm bản đồ sẽ tự động chọn khu vực gần điểm ghim.</small></label></div></section>
+      <section className="form-section"><div className="step">1</div><div className="form-section-body"><h2>Chọn vị trí trên bản đồ</h2><LocationPicker value={coordinates} onChange={chooseCoordinates} />{coordinates ? <div className="resolved-place"><MapPin size={18} /><div><small>{placeLoading ? "ĐANG TÌM TÊN ĐỊA ĐIỂM" : "ĐỊA ĐIỂM ĐÃ CHỌN"}</small><strong>{placeLoading ? "Đang tra cứu từ bản đồ..." : placeName}</strong></div>{placeLoading ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}</div> : null}<button className="locate-button" type="button" onClick={findNearestArea}>{locating ? <LoaderCircle className="spin" /> : <Crosshair />} {locating ? "Đang tìm vị trí..." : "Đặt ghim tại vị trí hiện tại"}</button></div></section>
       <section className="form-section"><div className="step">2</div><div className="form-section-body"><h2>Tình trạng hiện tại</h2><div className="severity-grid">{severityOptions.map((option) => <button key={option.value} type="button" className={severity === option.value ? `selected ${option.value.toLowerCase()}` : ""} onClick={() => setSeverity(option.value)}><span>{option.icon}</span><div><strong>{option.label}</strong><small>{option.helper}</small></div>{severity === option.value ? <Check size={18} /> : null}</button>)}</div></div></section>
       <section className="form-section"><div className="step">3</div><div className="form-section-body"><h2>Tên người đăng</h2><label className="field-label"><input value={reporterName} maxLength={40} onChange={(event) => setReporterName(event.target.value)} placeholder="Ví dụ: Minh Anh" /><small>Tên này sẽ hiển thị công khai trên bài viết.</small></label></div></section>
       <section className="form-section"><div className="step">4</div><div className="form-section-body"><h2>Thêm ảnh <span>Tùy chọn</span></h2>{preview ? <div className="image-preview"><Image src={preview} alt="Ảnh xem trước" fill /><label><Camera size={18} /> Thay ảnh<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage} /></label><button type="button" onClick={() => { setImage(null); setPreview(null); }}>Xóa</button></div> : <label className="image-drop"><ImagePlus /><strong>Chụp hoặc chọn ảnh</strong><small>JPEG, PNG hoặc WebP · tối đa 5MB</small><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={chooseImage} /></label>}</div></section>

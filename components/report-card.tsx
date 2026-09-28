@@ -15,7 +15,7 @@ export function ReportCard({ report, area, compact = false }: { report: FloodRep
     <article className={`report-card ${compact ? "compact" : ""}`}>
       <header className="report-head">
         <div className="avatar" aria-hidden>{initials(report.reporterName)}</div>
-        <div className="report-author"><strong>{report.reporterName}</strong><Link href={`/area/${area.slug}`}><MapPin size={13} /> {area.name}</Link></div>
+        <div className="report-author"><strong>{report.reporterName}</strong><Link href={`/area/${area.slug}`}><MapPin size={13} /> {report.placeName || area.name}</Link></div>
         <time dateTime={report.occurredAt}>{timeAgo(report.occurredAt)}</time>
       </header>
       <div className="report-status"><StatusChip status={report.severity} /></div>

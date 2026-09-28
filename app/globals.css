@@ -375,6 +375,12 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
 .main-map-center-target { position: fixed; z-index: 8; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 .pin-center-button { position: absolute; z-index: 6; left: 50%; bottom: 12px; transform: translateX(-50%); min-width: 190px; min-height: 42px; padding: 0 16px; border: 0; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: linear-gradient(135deg, #f97316, #ff934b); color: #fff; font-weight: 800; box-shadow: 0 9px 22px rgba(249,115,22,.28); cursor: pointer; }
 .location-picker .location-picker-coordinates { top: 57px; bottom: auto; }
+.resolved-place { display: grid; grid-template-columns: 28px 1fr 22px; align-items: center; gap: 9px; margin: 10px 0; padding: 11px 12px; border: 1px solid #ffd6bc; border-radius: 15px; background: #fff7f1; color: #d95c17; }
+.resolved-place > div { min-width: 0; display: grid; gap: 2px; }
+.resolved-place small { font-size: .63rem; font-weight: 850; letter-spacing: .08em; color: #e46a27; }
+.resolved-place strong { overflow: hidden; color: #3f4653; font-size: .8rem; line-height: 1.35; text-overflow: ellipsis; }
+.report-author { min-width: 0; }
+.report-author a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 900px) {
   .main-map-center-target { top: 42%; }
