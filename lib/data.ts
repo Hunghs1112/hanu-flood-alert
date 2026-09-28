@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
 import { AREAS } from "./areas";
-import type { AreaStatus, AreaStatusValue, FloodReport, Severity } from "./types";
+import type { AreaStatus, AreaStatusValue, FloodReport, MapPointStatus, Severity } from "./types";
 
 export { AREAS } from "./areas";
 
@@ -78,6 +78,41 @@ export async function getAreaStatuses(): Promise<AreaStatus[]> {
       recentReportCount: recent.length,
       latestReportAt: recent[0]?.occurredAt ?? null
     };
+  });
+}
+
+export async function getMapPoints(): Promise<MapPointStatus[]> {
+  const reports = (await getReports())
+    .filter((report) => Number.isFinite(report.latitude) && Number.isFinite(report.longitude))
+    .sort((a, b) => +new Date(b.occurredAt) - +new Date(a.occurredAt));
+  const groups = new Map<string, FloodReport[]>();
+
+  for (const report of reports) {
+    // A grid cell is roughly 50 metres around HANU, so nearby reports form one bubble.
+    const latitudeCell = Math.round(report.latitude * 2000);
+    const longitudeCell = Math.round(report.longitude * 2000);
+    const key = `${report.areaId}:${latitudeCell}:${longitudeCell}`;
+    const group = groups.get(key) ?? [];
+    group.push(report);
+    groups.set(key, group);
+  }
+
+  return Array.from(groups.entries()).flatMap(([key, group]) => {
+    const area = AREAS.find((item) => item.id === group[0].areaId);
+    if (!area) return [];
+    const longitude = group.reduce((sum, report) => sum + report.longitude, 0) / group.length;
+    const latitude = group.reduce((sum, report) => sum + report.latitude, 0) / group.length;
+    return [{
+      id: `point-${key}`,
+      areaId: area.id,
+      slug: area.slug,
+      name: area.name,
+      coordinates: [longitude, latitude] as [number, number],
+      status: calculateStatus(group),
+      recentReporterCount: new Set(group.map((report) => report.deviceId)).size,
+      recentReportCount: group.length,
+      latestReportAt: group[0].occurredAt
+    }];
   });
 }
 

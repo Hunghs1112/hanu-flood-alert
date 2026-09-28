@@ -28,3 +28,15 @@ export type AreaStatus = Area & {
   recentReportCount: number;
   latestReportAt: string | null;
 };
+
+export type MapPointStatus = {
+  id: string;
+  areaId: string;
+  slug: string;
+  name: string;
+  coordinates: [number, number];
+  status: AreaStatusValue;
+  recentReporterCount: number;
+  recentReportCount: number;
+  latestReportAt: string | null;
+};

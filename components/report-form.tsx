@@ -140,6 +140,7 @@ export default function ReportForm() {
         setError(result.error || "Chưa thể đăng báo cáo.");
         return;
       }
+      window.dispatchEvent(new Event("hanu:reports-updated"));
       setSuccess(true);
     } catch {
       setError("Kết nối bị gián đoạn. Vui lòng thử đăng lại.");

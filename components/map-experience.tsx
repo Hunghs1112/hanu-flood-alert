@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapInstance, Marker } from "maplibre-gl";
 import { Crosshair, Home, Info, MapPin, Minus, Plus, Search, X } from "lucide-react";
-import type { AreaStatus } from "@/lib/types";
+import type { AreaStatus, MapPointStatus } from "@/lib/types";
 import { StatusChip, STATUS_META, timeAgo } from "./status";
 
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
@@ -39,26 +39,27 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
   ]
 };
 
-function toGeoJson(areas: AreaStatus[]) {
+function toGeoJson(points: MapPointStatus[]) {
   return {
     type: "FeatureCollection" as const,
-    features: areas.map((area) => ({
+    features: points.map((point) => ({
       type: "Feature" as const,
-      geometry: { type: "Point" as const, coordinates: area.coordinates },
+      geometry: { type: "Point" as const, coordinates: point.coordinates },
       properties: {
-        id: area.id,
-        slug: area.slug,
-        name: area.name,
-        status: area.status,
-        count: area.recentReporterCount,
-        reportCount: area.recentReportCount
+        id: point.id,
+        areaId: point.areaId,
+        slug: point.slug,
+        name: point.name,
+        status: point.status,
+        count: point.recentReporterCount,
+        reportCount: point.recentReportCount
       }
     }))
   };
 }
 
-function addAreaLayers(map: MapInstance, areas: AreaStatus[]) {
-  map.addSource("flood-areas", { type: "geojson", data: toGeoJson(areas), cluster: true, clusterMaxZoom: 13, clusterRadius: 54 });
+function addAreaLayers(map: MapInstance, points: MapPointStatus[]) {
+  map.addSource("flood-areas", { type: "geojson", data: toGeoJson(points), cluster: true, clusterMaxZoom: 13, clusterRadius: 54 });
   map.addLayer({
     id: "clusters",
     type: "circle",
@@ -131,8 +132,9 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
   const mapRef = useRef<MapInstance | null>(null);
   const pickedMarkerRef = useRef<Marker | null>(null);
   const areasRef = useRef<AreaStatus[]>([]);
+  const pointsRef = useRef<MapPointStatus[]>([]);
   const [areas, setAreas] = useState<AreaStatus[]>([]);
-  const [selected, setSelected] = useState<AreaStatus | null>(null);
+  const [selected, setSelected] = useState<AreaStatus | MapPointStatus | null>(null);
   const [query, setQuery] = useState("");
   const [legend, setLegend] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -144,15 +146,20 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
     const data = await response.json();
     setAreas(data.areas);
     areasRef.current = data.areas;
+    pointsRef.current = data.points;
     setLoading(false);
     const source = mapRef.current?.getSource("flood-areas") as GeoJSONSource | undefined;
-    source?.setData(toGeoJson(data.areas));
+    source?.setData(toGeoJson(data.points));
   }, []);
 
   useEffect(() => {
     loadAreas();
     const timer = window.setInterval(loadAreas, 30_000);
-    return () => window.clearInterval(timer);
+    window.addEventListener("hanu:reports-updated", loadAreas);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("hanu:reports-updated", loadAreas);
+    };
   }, [loadAreas]);
 
   useEffect(() => {
@@ -167,8 +174,9 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
       const data = await response.json();
       setAreas(data.areas);
       areasRef.current = data.areas;
+      pointsRef.current = data.points;
       setLoading(false);
-      addAreaLayers(map, data.areas);
+      addAreaLayers(map, data.points);
     });
     map.on("click", (event) => {
       const clickableLayers = ["area-bubbles", "clusters"].filter((layer) => map.getLayer(layer));
@@ -176,12 +184,12 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
         ? map.queryRenderedFeatures(event.point, { layers: clickableLayers })[0]
         : undefined;
       if (feature?.layer.id === "area-bubbles") {
-        const area = areasRef.current.find((item) => item.id === feature.properties?.id);
-        if (area) {
+        const point = pointsRef.current.find((item) => item.id === feature.properties?.id);
+        if (point) {
           pickedMarkerRef.current?.remove();
           pickedMarkerRef.current = null;
           setPickedPoint(null);
-          setSelected(area);
+          setSelected(point);
         }
         return;
       }
