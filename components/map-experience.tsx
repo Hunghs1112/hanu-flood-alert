@@ -189,17 +189,6 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
         if (coordinates) map.easeTo({ center: coordinates, zoom: Math.min(map.getZoom() + 2, 16), duration: 650 });
         return;
       }
-
-      const coordinates: [number, number] = [event.lngLat.lng, event.lngLat.lat];
-      if (!pickedMarkerRef.current) {
-        pickedMarkerRef.current = new maplibregl.Marker({ element: createClickedMarker(), anchor: "center" })
-          .setLngLat(coordinates)
-          .addTo(map);
-      } else {
-        pickedMarkerRef.current.setLngLat(coordinates);
-      }
-      setSelected(null);
-      setPickedPoint(coordinates);
     });
     for (const layer of ["area-bubbles", "clusters"]) {
       map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
@@ -242,6 +231,22 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
     navigator.geolocation?.getCurrentPosition((position) => mapRef.current?.easeTo({ center: [position.coords.longitude, position.coords.latitude], zoom: 15, duration: 650 }));
   }
 
+  function pinMapCenter() {
+    const map = mapRef.current;
+    if (!map) return;
+    const center = map.getCenter();
+    const coordinates: [number, number] = [center.lng, center.lat];
+    if (!pickedMarkerRef.current) {
+      pickedMarkerRef.current = new maplibregl.Marker({ element: createClickedMarker(), anchor: "center" })
+        .setLngLat(coordinates)
+        .addTo(map);
+    } else {
+      pickedMarkerRef.current.setLngLat(coordinates);
+    }
+    setSelected(null);
+    setPickedPoint(coordinates);
+  }
+
   return (
     <section className={`map-page ${controlsVisible ? "map-active" : "map-background"}`}>
       <div ref={container} className="map-canvas" aria-label="Bản đồ tình trạng ngập quanh HANU" />
@@ -251,6 +256,7 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
         <div className="map-search glass"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm khu vực quanh HANU..." aria-label="Tìm khu vực" />{query ? <button onClick={() => setQuery("")} aria-label="Xóa tìm kiếm"><X size={18} /></button> : null}</div>
         {matches.length ? <div className="search-results glass">{matches.map((area) => <button key={area.id} onClick={() => focusArea(area)}><span className={`mini-dot ${STATUS_META[area.status].className}`} /> <span>{area.name}<small>{STATUS_META[area.status].label} · {area.recentReporterCount} người</small></span></button>)}</div> : null}
       </div>
+      {!selected && !pickedPoint ? <div className="main-map-center-target" aria-hidden="true"><span /></div> : null}
       <div className="map-controls glass-clear">
         <button onClick={() => mapRef.current?.zoomIn()} aria-label="Phóng to"><Plus /></button>
         <button onClick={() => mapRef.current?.zoomOut()} aria-label="Thu nhỏ"><Minus /></button>
@@ -279,7 +285,8 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
           <div className="eyebrow">CẬP NHẬT QUANH HANU</div>
           <h1>Nhìn nhanh trước khi đi</h1>
           <div className="overview-row"><span className="danger-text"><b>{summary.HEAVY}</b> nguy hiểm</span><span className="warning-text"><b>{summary.LIGHT}</b> cảnh báo</span><span className="safe-text"><b>{summary.DRY}</b> ổn định</span></div>
-          <p>Chạm vào một chấm để xem báo cáo và lịch sử khu vực.</p>
+          <p>Kéo bản đồ để đưa vị trí vào tâm, hoặc chạm một chấm ngập để xem chi tiết.</p>
+          <button className="primary-button point-report-button" onClick={pinMapCenter}><Crosshair size={18} /> Đặt ghim ở tâm bản đồ</button>
         </>}
       </aside>
       </> : null}

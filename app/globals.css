@@ -366,3 +366,18 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
 .map-click-pin span { position: relative; z-index: 1; width: 18px; height: 18px; border: 4px solid #fff; border-radius: 50%; background: #f97316; box-shadow: 0 4px 12px rgba(146,57,4,.38); }
 .picked-coordinates { display: inline-flex; margin: 4px 0 !important; padding: 8px 10px; border-radius: 10px; background: #f4f5f7; color: #4f596a !important; font: 700 .76rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .point-report-button { width: 100%; margin-top: 18px; }
+.location-center-target, .main-map-center-target { pointer-events: none; display: grid; place-items: center; width: 42px; height: 42px; border: 2px solid rgba(249,115,22,.9); border-radius: 50%; background: rgba(255,255,255,.24); box-shadow: 0 0 0 8px rgba(249,115,22,.1), 0 5px 16px rgba(93,43,11,.18); }
+.location-center-target::before, .location-center-target::after, .main-map-center-target::before, .main-map-center-target::after { content: ""; position: absolute; background: #f97316; border-radius: 999px; }
+.location-center-target::before, .main-map-center-target::before { width: 2px; height: 56px; }
+.location-center-target::after, .main-map-center-target::after { width: 56px; height: 2px; }
+.location-center-target span, .main-map-center-target span { position: relative; z-index: 1; width: 10px; height: 10px; border: 3px solid #fff; border-radius: 50%; background: #f97316; box-shadow: 0 2px 8px rgba(115,47,7,.35); }
+.location-center-target { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.main-map-center-target { position: fixed; z-index: 8; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.pin-center-button { position: absolute; z-index: 6; left: 50%; bottom: 12px; transform: translateX(-50%); min-width: 190px; min-height: 42px; padding: 0 16px; border: 0; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: linear-gradient(135deg, #f97316, #ff934b); color: #fff; font-weight: 800; box-shadow: 0 9px 22px rgba(249,115,22,.28); cursor: pointer; }
+.location-picker .location-picker-coordinates { top: 57px; bottom: auto; }
+
+@media (max-width: 900px) {
+  .main-map-center-target { top: 42%; }
+  .location-center-target { top: 48%; }
+  .pin-center-button { min-width: 176px; }
+}

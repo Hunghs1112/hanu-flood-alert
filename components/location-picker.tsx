@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { Map as MapInstance, Marker } from "maplibre-gl";
-import { MapPin } from "lucide-react";
+import { Crosshair, MapPin } from "lucide-react";
 
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
@@ -28,6 +28,7 @@ export function LocationPicker({
   const mapRef = useRef<MapInstance | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const onChangeRef = useRef(onChange);
+  const [centerPoint, setCenterPoint] = useState<[number, number]>(value ?? DEFAULT_CENTER);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -59,18 +60,10 @@ export function LocationPicker({
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-    map.on("click", (event) => {
-      const coordinates: [number, number] = [event.lngLat.lng, event.lngLat.lat];
-      if (!markerRef.current) {
-        markerRef.current = new maplibregl.Marker({ element: createLocationMarker(), anchor: "center" })
-          .setLngLat(coordinates)
-          .addTo(map);
-      } else {
-        markerRef.current.setLngLat(coordinates);
-      }
-      onChangeRef.current(coordinates);
+    map.on("move", () => {
+      const center = map.getCenter();
+      setCenterPoint([center.lng, center.lat]);
     });
-    map.getCanvas().style.cursor = "crosshair";
     mapRef.current = map;
 
     return () => {
@@ -94,14 +87,30 @@ export function LocationPicker({
     map.easeTo({ center: value, duration: 450 });
   }, [value]);
 
+  function confirmCenter() {
+    const center = mapRef.current?.getCenter();
+    if (!center) return;
+    const coordinates: [number, number] = [center.lng, center.lat];
+    if (!markerRef.current) {
+      markerRef.current = new maplibregl.Marker({ element: createLocationMarker(), anchor: "center" })
+        .setLngLat(coordinates)
+        .addTo(mapRef.current!);
+    } else {
+      markerRef.current.setLngLat(coordinates);
+    }
+    onChangeRef.current(coordinates);
+  }
+
   return (
     <div className="location-picker">
       <div ref={containerRef} className="location-picker-map" aria-label="Bản đồ chọn vị trí báo cáo" />
       <div className="location-picker-hint glass-clear">
         <MapPin size={16} />
-        <span>{value ? "Đã ghim vị trí · Chạm nơi khác để đổi" : "Chạm vào bản đồ để đặt ghim"}</span>
+        <span>Kéo bản đồ để đưa vị trí vào chính giữa</span>
       </div>
-      {value ? <div className="location-picker-coordinates">{value[1].toFixed(5)}, {value[0].toFixed(5)}</div> : null}
+      <div className="location-center-target" aria-hidden="true"><span /></div>
+      <div className="location-picker-coordinates">{centerPoint[1].toFixed(5)}, {centerPoint[0].toFixed(5)}</div>
+      <button type="button" className="pin-center-button" onClick={confirmCenter}><Crosshair size={17} /> {value ? "Cập nhật ghim tại đây" : "Đặt ghim tại đây"}</button>
     </div>
   );
 }
