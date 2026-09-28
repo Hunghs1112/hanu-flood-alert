@@ -8,6 +8,8 @@ import { Crosshair, Home, Info, Minus, Plus, Search, X } from "lucide-react";
 import type { AreaStatus } from "@/lib/types";
 import { StatusChip, STATUS_META, timeAgo } from "./status";
 
+maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
+
 const HANU_CENTER: [number, number] = [105.7952, 20.9914];
 
 const MAP_STYLE: maplibregl.StyleSpecification = {
@@ -16,7 +18,7 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
   sources: {
     osm: {
       type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tiles: ["/api/tiles/{z}/{x}/{y}"],
       tileSize: 256,
       attribution: "© OpenStreetMap contributors"
     }
