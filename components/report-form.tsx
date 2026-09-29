@@ -236,7 +236,9 @@ export default function ReportForm() {
       <section className="form-section"><div className="step">5</div><div className="form-section-body"><h2>Mô tả <span>Tùy chọn</span></h2><label className="field-label"><textarea value={description} maxLength={300} onChange={(event) => setDescription(event.target.value)} placeholder="Nước cao khoảng bao nhiêu? Xe máy có đi được không?" /><small>{description.length}/300</small></label></div></section>
       <section className="form-section"><div className="step">6</div><div className="form-section-body"><h2>Thời gian ghi nhận</h2><label className="field-label time-field"><Clock3 /><input type="datetime-local" value={occurredAt} max={new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16)} onChange={(event) => setOccurredAt(event.target.value)} /></label></div></section>
       {error ? <div className="form-error">{error}</div> : null}
-      <div className="submit-bar glass"><div><ShieldCheck /><span>Thông tin được lưu vào lịch sử cộng đồng.</span></div><button className="primary-button" disabled={!valid || submitting}>{submitting ? <><LoaderCircle className="spin" /> Đang đăng...</> : "Đăng báo cáo"}</button></div>
+      <section className="form-submit-section">
+        <div className="submit-bar glass"><div><ShieldCheck /><span>Thông tin được lưu vào lịch sử cộng đồng.</span></div><button className="primary-button" disabled={!valid || submitting}>{submitting ? <><LoaderCircle className="spin" /> Đang đăng...</> : "Đăng báo cáo"}</button></div>
+      </section>
     </form>
   );
 }
