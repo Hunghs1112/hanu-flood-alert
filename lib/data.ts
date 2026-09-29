@@ -1,34 +1,31 @@
 import { randomUUID } from "crypto";
-import { mkdir, readFile, rename, writeFile } from "fs/promises";
-import path from "path";
+import { Redis } from "@upstash/redis";
 import { AREAS } from "./areas";
 import type { AreaStatus, AreaStatusValue, FloodReport, MapPointStatus, Severity } from "./types";
 
 export { AREAS } from "./areas";
 
-const dataPath = path.join(process.cwd(), "data", "reports.runtime.json");
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
+  : null;
+
+export function isReportStorageConfigured() {
+  return redis !== null;
+}
 
 export async function getReports(): Promise<FloodReport[]> {
+  if (!redis) return [];
   try {
-    const raw = await readFile(dataPath, "utf8");
-    const reports = JSON.parse(raw) as FloodReport[];
-    return reports;
+    return await redis.lrange<FloodReport>("reports", 0, 999);
   } catch {
     return [];
   }
 }
 
-async function persistReports(reports: FloodReport[]) {
-  await mkdir(path.dirname(dataPath), { recursive: true });
-  const temp = `${dataPath}.${process.pid}.tmp`;
-  await writeFile(temp, JSON.stringify(reports, null, 2), "utf8");
-  await rename(temp, dataPath);
-}
-
 export async function addReport(input: Omit<FloodReport, "id" | "createdAt">) {
-  const existing = await getReports();
+  if (!redis) throw new Error("Report storage is not configured");
   const report: FloodReport = { ...input, id: randomUUID(), createdAt: new Date().toISOString() };
-  await persistReports([report, ...existing.filter((item) => !item.id.startsWith("demo-")).slice(0, 999)]);
+  await redis.multi().lpush("reports", report).ltrim("reports", 0, 998).exec();
   return report;
 }
 

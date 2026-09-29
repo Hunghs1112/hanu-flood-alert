@@ -1,8 +1,7 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
-import { addReport, AREAS, getReports } from "@/lib/data";
+import { addReport, AREAS, getReports, isReportStorageConfigured } from "@/lib/data";
 import type { Severity } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -18,6 +17,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isReportStorageConfigured()) {
+      return NextResponse.json({ error: "Máy chủ chưa cấu hình nơi lưu báo cáo." }, { status: 503 });
+    }
     const form = await request.formData();
     const areaId = String(form.get("areaId") || "");
     const reporterName = String(form.get("reporterName") || "").trim().slice(0, 40);
@@ -53,10 +55,10 @@ export async function POST(request: NextRequest) {
       }
       const ext = image.type === "image/png" ? "png" : image.type === "image/webp" ? "webp" : "jpg";
       const fileName = `${Date.now()}-${randomUUID()}.${ext}`;
-      const uploadDir = path.join(process.cwd(), "public", "uploads");
-      await mkdir(uploadDir, { recursive: true });
-      await writeFile(path.join(uploadDir, fileName), Buffer.from(await image.arrayBuffer()));
-      imageUrl = `/uploads/${fileName}`;
+      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        return NextResponse.json({ error: "Máy chủ chưa cấu hình nơi lưu ảnh." }, { status: 503 });
+      }
+      imageUrl = (await put(`reports/${fileName}`, image, { access: "public" })).url;
     }
 
     const report = await addReport({
