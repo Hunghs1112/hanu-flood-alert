@@ -61,6 +61,7 @@ main { min-height: 100vh; }
 .search-results button:hover { background: rgba(255,255,255,.07); }
 .search-results button > span:last-child { display: grid; }
 .search-results small { color: var(--muted); }
+.search-results .search-loading { display: block; padding: 9px 10px 5px; font-size: .78rem; }
 .mini-dot, .legend-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
 .status-heavy { --status: var(--danger); }
 .status-light { --status: var(--warning); }

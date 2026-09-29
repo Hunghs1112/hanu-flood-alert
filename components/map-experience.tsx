@@ -12,6 +12,7 @@ import { StatusChip, STATUS_META, timeAgo } from "./status";
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 const HANU_CENTER: [number, number] = [105.7952, 20.9914];
+type PlaceMatch = { name: string; coordinates: [number, number] };
 
 const MAP_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -138,6 +139,8 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
   const [areas, setAreas] = useState<AreaStatus[]>([]);
   const [selected, setSelected] = useState<AreaStatus | MapPointStatus | null>(null);
   const [query, setQuery] = useState("");
+  const [placeMatches, setPlaceMatches] = useState<PlaceMatch[]>([]);
+  const [searching, setSearching] = useState(false);
   const [legend, setLegend] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pickedPoint, setPickedPoint] = useState<[number, number] | null>(null);
@@ -238,8 +241,23 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
     mapRef.current.easeTo({ center: selected.coordinates, zoom: Math.max(mapRef.current.getZoom(), 14.8), offset: [0, -120], duration: 650 });
   }, [selected]);
 
-  const matches = useMemo(() => query.trim() ? areas.filter((area) => area.name.toLowerCase().includes(query.toLowerCase())) : [], [areas, query]);
+  const areaMatches = useMemo(() => query.trim() ? areas.filter((area) => area.name.toLowerCase().includes(query.trim().toLowerCase())) : [], [areas, query]);
   const summary = useMemo(() => areas.reduce((acc, area) => ({ ...acc, [area.status]: acc[area.status] + 1 }), { HEAVY: 0, LIGHT: 0, DRY: 0, UNKNOWN: 0 }), [areas]);
+
+  useEffect(() => {
+    const term = query.trim();
+    if (term.length < 2) { setPlaceMatches([]); setSearching(false); return; }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setSearching(true);
+      fetch(`/api/search?q=${encodeURIComponent(term)}`, { signal: controller.signal })
+        .then((response) => response.ok ? response.json() : { places: [] })
+        .then((result) => { if (!controller.signal.aborted) setPlaceMatches(result.places ?? []); })
+        .catch(() => { if (!controller.signal.aborted) setPlaceMatches([]); })
+        .finally(() => { if (!controller.signal.aborted) setSearching(false); });
+    }, 350);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [query]);
 
   function focusArea(area: AreaStatus) {
     pickedMarkerRef.current?.remove();
@@ -257,35 +275,44 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
     navigator.geolocation?.getCurrentPosition((position) => mapRef.current?.easeTo({ center: [position.coords.longitude, position.coords.latitude], zoom: 15, duration: 650 }));
   }
 
-  function pinMapCenter() {
+  function pinMapCenter(coordinates?: [number, number], placeName?: string) {
     const map = mapRef.current;
     if (!map) return;
     const center = map.getCenter();
-    const coordinates: [number, number] = [center.lng, center.lat];
+    const point = coordinates ?? [center.lng, center.lat] as [number, number];
     if (!pickedMarkerRef.current) {
       pickedMarkerRef.current = new maplibregl.Marker({ element: createClickedMarker(), anchor: "center" })
-        .setLngLat(coordinates)
+        .setLngLat(point)
         .addTo(map);
     } else {
-      pickedMarkerRef.current.setLngLat(coordinates);
+      pickedMarkerRef.current.setLngLat(point);
     }
     pinGeocodeRef.current?.abort();
     const controller = new AbortController();
     pinGeocodeRef.current = controller;
-    const nearestArea = [...areasRef.current].sort((a, b) => Math.hypot(a.coordinates[0] - coordinates[0], a.coordinates[1] - coordinates[1]) - Math.hypot(b.coordinates[0] - coordinates[0], b.coordinates[1] - coordinates[1]))[0];
-    const fallbackPlaceName = nearestArea ? `${nearestArea.name}, Hà Nội` : `Tọa độ ${coordinates[1].toFixed(5)}, ${coordinates[0].toFixed(5)}`;
-    rememberReportLocation(coordinates, fallbackPlaceName);
+    const nearestArea = [...areasRef.current].sort((a, b) => Math.hypot(a.coordinates[0] - point[0], a.coordinates[1] - point[1]) - Math.hypot(b.coordinates[0] - point[0], b.coordinates[1] - point[1]))[0];
+    const fallbackPlaceName = placeName || (nearestArea ? `${nearestArea.name}, Hà Nội` : `Tọa độ ${point[1].toFixed(5)}, ${point[0].toFixed(5)}`);
+    rememberReportLocation(point, fallbackPlaceName);
     setSelected(null);
-    setPickedPoint(coordinates);
+    setPickedPoint(point);
     setPickedPlaceName(fallbackPlaceName);
-    fetch(`/api/reverse-geocode?lat=${coordinates[1]}&lng=${coordinates[0]}`, { signal: controller.signal })
+    if (placeName) return;
+    fetch(`/api/reverse-geocode?lat=${point[1]}&lng=${point[0]}`, { signal: controller.signal })
       .then(async (response) => {
         const result = await response.json();
         if (!response.ok || !result.placeName || controller.signal.aborted) return;
         setPickedPlaceName(result.placeName);
-        rememberReportLocation(coordinates, result.placeName);
+        rememberReportLocation(point, result.placeName);
       })
       .catch(() => undefined);
+  }
+
+  function focusPlace(place: PlaceMatch) {
+    mapRef.current?.easeTo({ center: place.coordinates, zoom: 16, duration: 650 });
+    pinMapCenter(place.coordinates, place.name);
+    setQuery("");
+    setPlaceMatches([]);
+    setMobileSearchOpen(false);
   }
 
   return (
@@ -295,11 +322,11 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
       <div className="map-mobile-brand glass"><span>HANU <b>PULSE</b></span><small>{loading ? "Đang cập nhật" : "Cộng đồng trực tuyến"}</small></div>
       <button className={`mobile-search-toggle glass ${mobileSearchOpen ? "hidden" : ""}`} onClick={() => setMobileSearchOpen(true)} aria-label="Mở tìm kiếm"><Search size={20} /></button>
       <div className={`map-search-wrap ${mobileSearchOpen ? "mobile-open" : ""}`}>
-        <div className="map-search glass"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm khu vực quanh HANU..." aria-label="Tìm khu vực" />{query ? <button onClick={() => setQuery("")} aria-label="Xóa tìm kiếm"><X size={18} /></button> : <button className="mobile-search-close" onClick={() => setMobileSearchOpen(false)} aria-label="Đóng tìm kiếm"><X size={18} /></button>}</div>
-        {matches.length ? <div className="search-results glass">{matches.map((area) => <button key={area.id} onClick={() => focusArea(area)}><span className={`mini-dot ${STATUS_META[area.status].className}`} /> <span>{area.name}<small>{STATUS_META[area.status].label} · {area.recentReporterCount} người</small></span></button>)}</div> : null}
+        <div className="map-search glass"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm khu vực, đường phố..." aria-label="Tìm khu vực hoặc địa điểm" />{query ? <button onClick={() => setQuery("")} aria-label="Xóa tìm kiếm"><X size={18} /></button> : <button className="mobile-search-close" onClick={() => setMobileSearchOpen(false)} aria-label="Đóng tìm kiếm"><X size={18} /></button>}</div>
+        {areaMatches.length || placeMatches.length || searching ? <div className="search-results glass">{areaMatches.map((area) => <button key={area.id} onClick={() => focusArea(area)}><span className={`mini-dot ${STATUS_META[area.status].className}`} /><span>{area.name}<small>{STATUS_META[area.status].label} · {area.recentReporterCount} người báo</small></span></button>)}{placeMatches.map((place) => <button key={`${place.coordinates.join(",")}-${place.name}`} onClick={() => focusPlace(place)}><MapPin size={16} /><span>{place.name}<small>Địa điểm trên bản đồ · chọn để đăng báo cáo</small></span></button>)}{searching ? <small className="search-loading">Đang tìm địa điểm…</small> : null}</div> : null}
       </div>
       {!selected && !pickedPoint ? <div className="main-map-center-target" aria-hidden="true"><span /></div> : null}
-      {!selected && !pickedPoint ? <button className="mobile-pin-center" onClick={pinMapCenter}><Crosshair size={18} /><span>Đặt ghim</span></button> : null}
+      {!selected && !pickedPoint ? <button className="mobile-pin-center" onClick={() => pinMapCenter()}><Crosshair size={18} /><span>Đặt ghim</span></button> : null}
       <div className={`map-controls glass-clear ${selected || pickedPoint ? "has-selection" : ""}`}>
         <button onClick={() => mapRef.current?.zoomIn()} aria-label="Phóng to"><Plus /></button>
         <button onClick={() => mapRef.current?.zoomOut()} aria-label="Thu nhỏ"><Minus /></button>
@@ -329,7 +356,7 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
           <h1>Nhìn nhanh trước khi đi</h1>
           <div className="overview-row"><span className="danger-text"><b>{summary.HEAVY}</b> nguy hiểm</span><span className="warning-text"><b>{summary.LIGHT}</b> cảnh báo</span><span className="safe-text"><b>{summary.DRY}</b> ổn định</span></div>
           <p>Kéo bản đồ để đưa vị trí vào tâm, hoặc chạm một chấm ngập để xem chi tiết.</p>
-          <button className="primary-button point-report-button" onClick={pinMapCenter}><Crosshair size={18} /> Đặt ghim ở tâm bản đồ</button>
+          <button className="primary-button point-report-button" onClick={() => pinMapCenter()}><Crosshair size={18} /> Đặt ghim ở tâm bản đồ</button>
         </>}
       </aside>
       </> : null}
