@@ -497,6 +497,8 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
 .form-section .step { position: absolute; top: 16px; left: 14px; }
 .form-section h2 { min-height: 30px; padding-left: 42px; display: flex; align-items: center; }
 .form-section-body, .image-drop, .image-preview { width: 100%; }
+.report-location { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 10px; margin: 0 0 14px; padding: 12px 14px; border: 1px solid #ffd6bc; border-radius: 16px; background: #fff7f1; color: #dd611d; }
+.report-location > div { min-width: 0; display: grid; gap: 2px; }.report-location small { color: #e46a27; font-size: .63rem; font-weight: 850; letter-spacing: .08em; }.report-location strong { overflow: hidden; color: #3f4653; font-size: .8rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }.report-location button { border: 0; background: transparent; color: #d95a15; cursor: pointer; font-size: .78rem; font-weight: 800; white-space: nowrap; }
 .form-submit-section, .report-form:has(.submit-bar button:enabled) .form-submit-section { position: static; margin-top: 18px; padding-top: 0; background: none; }
 .report-form .submit-bar, .report-form:has(.submit-bar button:enabled) .submit-bar { position: static; bottom: auto; }
 

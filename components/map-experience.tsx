@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapInstance, Marker } from "maplibre-gl";
 import { Crosshair, Home, Info, MapPin, Minus, Plus, Search, X } from "lucide-react";
+import { rememberReportLocation } from "@/lib/report-location";
 import type { AreaStatus, MapPointStatus } from "@/lib/types";
 import { StatusChip, STATUS_META, timeAgo } from "./status";
 
@@ -131,6 +132,7 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapInstance | null>(null);
   const pickedMarkerRef = useRef<Marker | null>(null);
+  const pinGeocodeRef = useRef<AbortController | null>(null);
   const areasRef = useRef<AreaStatus[]>([]);
   const pointsRef = useRef<MapPointStatus[]>([]);
   const [areas, setAreas] = useState<AreaStatus[]>([]);
@@ -139,6 +141,7 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
   const [legend, setLegend] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pickedPoint, setPickedPoint] = useState<[number, number] | null>(null);
+  const [pickedPlaceName, setPickedPlaceName] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const loadAreas = useCallback(async () => {
@@ -169,7 +172,14 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
     map.dragPan.enable();
     map.touchZoomRotate.enable();
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "top-left");
+    const rememberCenter = () => {
+      if (pickedMarkerRef.current) return;
+      const center = map.getCenter();
+      rememberReportLocation([center.lng, center.lat]);
+    };
+    map.on("moveend", rememberCenter);
     map.on("load", async () => {
+      rememberCenter();
       const response = await fetch("/api/areas", { cache: "no-store" });
       const data = await response.json();
       setAreas(data.areas);
@@ -188,7 +198,10 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
         if (point) {
           pickedMarkerRef.current?.remove();
           pickedMarkerRef.current = null;
+          pinGeocodeRef.current?.abort();
           setPickedPoint(null);
+          setPickedPlaceName("");
+          rememberReportLocation(point.coordinates, point.name);
           setSelected(point);
         }
         return;
@@ -204,7 +217,7 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
       map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
     }
     mapRef.current = map;
-    return () => { pickedMarkerRef.current?.remove(); map.remove(); mapRef.current = null; };
+    return () => { map.off("moveend", rememberCenter); pinGeocodeRef.current?.abort(); pickedMarkerRef.current?.remove(); map.remove(); mapRef.current = null; };
   }, []);
 
   useEffect(() => {
@@ -231,7 +244,10 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
   function focusArea(area: AreaStatus) {
     pickedMarkerRef.current?.remove();
     pickedMarkerRef.current = null;
+    pinGeocodeRef.current?.abort();
     setPickedPoint(null);
+    setPickedPlaceName("");
+    rememberReportLocation(area.coordinates, area.name);
     setSelected(area);
     setQuery("");
     setMobileSearchOpen(false);
@@ -253,8 +269,23 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
     } else {
       pickedMarkerRef.current.setLngLat(coordinates);
     }
+    pinGeocodeRef.current?.abort();
+    const controller = new AbortController();
+    pinGeocodeRef.current = controller;
+    const nearestArea = [...areasRef.current].sort((a, b) => Math.hypot(a.coordinates[0] - coordinates[0], a.coordinates[1] - coordinates[1]) - Math.hypot(b.coordinates[0] - coordinates[0], b.coordinates[1] - coordinates[1]))[0];
+    const fallbackPlaceName = nearestArea ? `${nearestArea.name}, Hà Nội` : `Tọa độ ${coordinates[1].toFixed(5)}, ${coordinates[0].toFixed(5)}`;
+    rememberReportLocation(coordinates, fallbackPlaceName);
     setSelected(null);
     setPickedPoint(coordinates);
+    setPickedPlaceName(fallbackPlaceName);
+    fetch(`/api/reverse-geocode?lat=${coordinates[1]}&lng=${coordinates[0]}`, { signal: controller.signal })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || !result.placeName || controller.signal.aborted) return;
+        setPickedPlaceName(result.placeName);
+        rememberReportLocation(coordinates, result.placeName);
+      })
+      .catch(() => undefined);
   }
 
   return (
@@ -287,9 +318,9 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
           <div className="sheet-metrics"><div><strong>{selected.recentReporterCount}</strong><span>người báo</span></div><div><strong>{selected.recentReportCount}</strong><span>bài gần đây</span></div></div>
           <div className="sheet-actions"><Link className="primary-button" href={`/report?area=${selected.id}`}>Cập nhật tình trạng</Link><Link className="secondary-button" href={`/area/${selected.slug}`}>Xem lịch sử</Link></div>
         </> : pickedPoint ? <>
-          <button className="sheet-close" onClick={() => { pickedMarkerRef.current?.remove(); pickedMarkerRef.current = null; setPickedPoint(null); }} aria-label="Đóng"><X size={18} /></button>
+          <button className="sheet-close" onClick={() => { pickedMarkerRef.current?.remove(); pickedMarkerRef.current = null; pinGeocodeRef.current?.abort(); setPickedPoint(null); setPickedPlaceName(""); const map = mapRef.current; if (map) rememberReportLocation([map.getCenter().lng, map.getCenter().lat]); }} aria-label="Đóng"><X size={18} /></button>
           <div className="eyebrow"><MapPin size={14} /> ĐIỂM ĐÃ CHỌN</div>
-          <h1>Vị trí trên bản đồ</h1>
+          <h1>{pickedPlaceName || "Vị trí trên bản đồ"}</h1>
           <p className="picked-coordinates">{pickedPoint[1].toFixed(6)}, {pickedPoint[0].toFixed(6)}</p>
           <p>Điểm ghim đã sẵn sàng để bạn gửi tình trạng ngập tại đúng vị trí này.</p>
           <Link className="primary-button point-report-button" href={`/report?lat=${pickedPoint[1]}&lng=${pickedPoint[0]}`}>Đăng báo cáo tại đây</Link>

@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "HANU-Pulse/0.1 (community flood map; http://180.93.37.143:4317)",
-        "Referer": "http://180.93.37.143:4317/"
+        "User-Agent": "HANU-Pulse/0.1 (community flood map; https://hanu-flood-alert.vercel.app)",
+        "Referer": "https://hanu-flood-alert.vercel.app/"
       },
       next: { revalidate: 2_592_000 }
     });
