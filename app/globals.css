@@ -272,10 +272,10 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
 
 .map-page { background: #eef1f3; }
 .map-canvas::after { background: radial-gradient(circle at 55% 45%, transparent 50%, rgba(77,87,100,.08) 100%); }
-.map-search-wrap { top: 92px; left: 16px; width: 452px; }
+.map-search-wrap { top: 92px; left: 16px; width: 500px; }
 .map-search { border-radius: 17px; }.map-search input { color: #252b37; }.map-search input::placeholder { color: #87909e; }
 .search-results button:hover { background: #fff3ea; }.search-results small { color: var(--muted); }
-.area-sheet { left: 16px; right: auto; top: 158px; width: 452px; border-radius: 22px; }
+.area-sheet { left: 16px; right: auto; top: 158px; width: 500px; border-radius: 22px; }
 .area-sheet p { color: #667184; }.sheet-close { background: #f1f3f5; color: #4d5665; }
 .sheet-metrics div, .overview-row span { background: #f5f6f8; }
 .map-controls button { color: #404958; border-color: #e3e6ea; }.map-controls button:hover { background: #fff1e7; }
@@ -524,4 +524,18 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
 
   .report-page .form-header { grid-template-columns: 1fr; }
   .feed-shell .page-heading { padding-top: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes map-surface-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes map-panel-in { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes map-sheet-in { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes map-controls-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
+
+  .map-active .map-canvas { animation: map-surface-in .45s ease-out both; }
+  body:has(.map-active) .desktop-nav { animation: map-panel-in .42s cubic-bezier(.22, 1, .36, 1) both; }
+  .map-active .map-search-wrap { animation: map-panel-in .46s cubic-bezier(.22, 1, .36, 1) .07s both; }
+  .map-active .area-sheet { animation: map-sheet-in .5s cubic-bezier(.22, 1, .36, 1) .14s both; }
+  .map-active .map-controls, .map-active .legend-toggle { animation: map-controls-in .4s cubic-bezier(.22, 1, .36, 1) .2s both; }
+  body:has(.map-active) .mobile-nav { animation: map-panel-in .42s cubic-bezier(.22, 1, .36, 1) both; }
 }
