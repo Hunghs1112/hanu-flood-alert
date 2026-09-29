@@ -488,3 +488,18 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
 @media (prefers-reduced-motion: reduce) {
   .route-layer:not(.route-layer-map) .side-panel, .feed-main > *, .report-form > *, .area-page > *, .report-card, .area-hero::before { animation: none; }
 }
+
+/* Report form: the pin is chosen on the map before this panel opens. */
+.desktop-nav { width: 500px; }
+.desktop-nav nav a { flex-shrink: 0; white-space: nowrap; }
+.desktop-nav nav .nav-create { min-width: 108px; }
+.form-section { position: relative; display: block; }
+.form-section .step { position: absolute; top: 16px; left: 14px; }
+.form-section h2 { min-height: 30px; padding-left: 42px; display: flex; align-items: center; }
+.form-section-body, .image-drop, .image-preview { width: 100%; }
+.form-submit-section, .report-form:has(.submit-bar button:enabled) .form-submit-section { position: static; margin-top: 18px; padding-top: 0; background: none; }
+.report-form .submit-bar, .report-form:has(.submit-bar button:enabled) .submit-bar { position: static; bottom: auto; }
+
+@media (max-width: 520px) {
+  .form-section .step { top: 14px; left: 12px; }
+}
