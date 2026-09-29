@@ -14,6 +14,42 @@ const severityOptions: Array<{ value: Severity; label: string; helper: string; i
   { value: "DRY", label: "Đã khô", helper: "Nước đã rút, đường ổn định", icon: "🟢" }
 ];
 
+const MAX_UPLOAD_BYTES = 3.5 * 1024 * 1024;
+const MAX_IMAGE_EDGE = 1920;
+const imageTypes = ["image/jpeg", "image/png", "image/webp"];
+
+async function prepareImage(file: File) {
+  if (file.size <= MAX_UPLOAD_BYTES) return file;
+
+  const source = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new window.Image();
+      element.onload = () => resolve(element);
+      element.onerror = reject;
+      element.src = source;
+    });
+    const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(image.width, image.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(image.width * scale);
+    canvas.height = Math.round(image.height * scale);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("canvas-unavailable");
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    let quality = 0.82;
+    let blob: Blob | null = null;
+    while (quality >= 0.42 && (!blob || blob.size > MAX_UPLOAD_BYTES)) {
+      blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      quality -= 0.1;
+    }
+    if (!blob || blob.size > MAX_UPLOAD_BYTES) throw new Error("too-large");
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "photo"}.jpg`, { type: "image/jpeg" });
+  } finally {
+    URL.revokeObjectURL(source);
+  }
+}
+
 function getNearestArea(coordinates: [number, number]) {
   return [...AREAS].sort((a, b) => {
     const distanceA = Math.hypot(a.coordinates[0] - coordinates[0], a.coordinates[1] - coordinates[1]);
@@ -77,6 +113,7 @@ export default function ReportForm() {
   const [occurredAt, setOccurredAt] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16));
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [preparingImage, setPreparingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -106,7 +143,7 @@ export default function ReportForm() {
     return () => controller.abort();
   }, [coordinates]);
 
-  const valid = useMemo(() => Boolean(areaId && coordinates && placeName && !placeLoading && severity && reporterName.trim().length >= 2), [areaId, coordinates, placeName, placeLoading, severity, reporterName]);
+  const valid = useMemo(() => Boolean(areaId && coordinates && placeName && !placeLoading && !preparingImage && severity && reporterName.trim().length >= 2), [areaId, coordinates, placeName, placeLoading, preparingImage, severity, reporterName]);
 
   function chooseCoordinates(nextCoordinates: [number, number]) {
     setCoordinates(nextCoordinates);
@@ -114,12 +151,25 @@ export default function ReportForm() {
     setError("");
   }
 
-  function chooseImage(event: ChangeEvent<HTMLInputElement>) {
+  async function chooseImage(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
-    if (preview) URL.revokeObjectURL(preview);
-    setImage(file);
-    setPreview(file ? URL.createObjectURL(file) : null);
+    event.target.value = "";
+    if (!file) return;
+    if (!imageTypes.includes(file.type)) return setError("Ảnh phải là JPEG, PNG hoặc WebP.");
+    setPreparingImage(true);
     setError("");
+    try {
+      const prepared = await prepareImage(file);
+      if (preview) URL.revokeObjectURL(preview);
+      setImage(prepared);
+      setPreview(URL.createObjectURL(prepared));
+    } catch {
+      setImage(null);
+      setPreview(null);
+      setError("Không thể nén ảnh này xuống mức có thể gửi. Hãy chọn ảnh khác.");
+    } finally {
+      setPreparingImage(false);
+    }
   }
 
   function findNearestArea() {
@@ -182,7 +232,7 @@ export default function ReportForm() {
       <section className="form-section"><div className="step">1</div><div className="form-section-body"><h2>Chọn vị trí trên bản đồ</h2><LocationPicker value={coordinates} onChange={chooseCoordinates} />{coordinates ? <div className="resolved-place"><MapPin size={18} /><div><small>{placeLoading ? "ĐANG TÌM TÊN ĐỊA ĐIỂM" : "ĐỊA ĐIỂM ĐÃ CHỌN"}</small><strong>{placeLoading ? "Đang tra cứu từ bản đồ..." : placeName}</strong></div>{placeLoading ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}</div> : null}<button className="locate-button" type="button" onClick={findNearestArea}>{locating ? <LoaderCircle className="spin" /> : <Crosshair />} {locating ? "Đang tìm vị trí..." : "Đặt ghim tại vị trí hiện tại"}</button></div></section>
       <section className="form-section"><div className="step">2</div><div className="form-section-body"><h2>Tình trạng hiện tại</h2><div className="severity-grid">{severityOptions.map((option) => <button key={option.value} type="button" className={severity === option.value ? `selected ${option.value.toLowerCase()}` : ""} onClick={() => setSeverity(option.value)}><span>{option.icon}</span><div><strong>{option.label}</strong><small>{option.helper}</small></div>{severity === option.value ? <Check size={18} /> : null}</button>)}</div></div></section>
       <section className="form-section"><div className="step">3</div><div className="form-section-body"><h2>Tên người đăng</h2><label className="field-label"><input value={reporterName} maxLength={40} onChange={(event) => setReporterName(event.target.value)} placeholder="Ví dụ: Minh Anh" /><small>Tên này sẽ hiển thị công khai trên bài viết.</small></label></div></section>
-      <section className="form-section"><div className="step">4</div><div className="form-section-body"><h2>Thêm ảnh <span>Tùy chọn</span></h2>{preview ? <div className="image-preview"><Image src={preview} alt="Ảnh xem trước" fill /><label><Camera size={18} /> Thay ảnh<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage} /></label><button type="button" onClick={() => { setImage(null); setPreview(null); }}>Xóa</button></div> : <label className="image-drop"><ImagePlus /><strong>Chụp hoặc chọn ảnh</strong><small>JPEG, PNG hoặc WebP · tối đa 5MB</small><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={chooseImage} /></label>}</div></section>
+      <section className="form-section"><div className="step">4</div><div className="form-section-body"><h2>Thêm ảnh <span>Tùy chọn</span></h2>{preview ? <div className="image-preview"><Image src={preview} alt="Ảnh xem trước" fill /><label><Camera size={18} /> Thay ảnh<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage} /></label><button type="button" onClick={() => { setImage(null); setPreview(null); }}>Xóa</button></div> : <label className="image-drop"><ImagePlus /><strong>{preparingImage ? "Đang tối ưu ảnh..." : "Chụp hoặc chọn ảnh"}</strong><small>JPEG, PNG hoặc WebP · ảnh lớn tự nén trước khi gửi</small><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={chooseImage} /></label>}</div></section>
       <section className="form-section"><div className="step">5</div><div className="form-section-body"><h2>Mô tả <span>Tùy chọn</span></h2><label className="field-label"><textarea value={description} maxLength={300} onChange={(event) => setDescription(event.target.value)} placeholder="Nước cao khoảng bao nhiêu? Xe máy có đi được không?" /><small>{description.length}/300</small></label></div></section>
       <section className="form-section"><div className="step">6</div><div className="form-section-body"><h2>Thời gian ghi nhận</h2><label className="field-label time-field"><Clock3 /><input type="datetime-local" value={occurredAt} max={new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16)} onChange={(event) => setOccurredAt(event.target.value)} /></label></div></section>
       {error ? <div className="form-error">{error}</div> : null}
