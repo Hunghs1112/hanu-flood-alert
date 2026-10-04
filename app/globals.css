@@ -555,11 +555,7 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
   .route-layer:not(.route-layer-map) { position: fixed; z-index: 40; inset: 0; display: flex; align-items: flex-start; padding: var(--mobile-top) 12px calc(var(--mobile-dock) + 10px); pointer-events: none; }
   .route-layer:not(.route-layer-map) .split-page { width: 100%; min-height: 0; }
   .route-layer:not(.route-layer-map) .side-panel { width: 100%; height: calc(100dvh - var(--mobile-top) - var(--mobile-dock) - 10px); min-height: 0; max-height: none; overflow-y: auto; overscroll-behavior: contain; border: 1px solid rgba(255,255,255,.72); border-radius: 28px; background: rgba(255,255,255,.74); box-shadow: 0 18px 50px rgba(51,62,76,.22), inset 0 1px rgba(255,255,255,.86); backdrop-filter: blur(20px) saturate(135%); -webkit-backdrop-filter: blur(20px) saturate(135%); }
-<<<<<<< Updated upstream
   .route-layer:not(.route-layer-map) .feed-shell, .route-layer:not(.route-layer-map) .report-page, .route-layer:not(.route-layer-map) .area-page { width: 100%; min-height: 100%; padding: 14px 12px 18px; background: rgba(250,250,251,.96); }
-=======
-  .route-layer:not(.route-layer-map) .feed-shell, .route-layer:not(.route-layer-map) .report-page, .route-layer:not(.route-layer-map) .area-page { width: 100%; min-height: 100%; padding: 20px 16px 24px; background: transparent; }
->>>>>>> Stashed changes
 
   .mobile-nav.glass { position: fixed; z-index: 50; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 12px; width: auto; height: 64px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
   body:has(.map-active) .mobile-nav { animation: none; }
@@ -581,13 +577,8 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
   .map-controls button, .legend-toggle { border-color: rgba(255,255,255,.72); background: rgba(255,255,255,.72); box-shadow: 0 9px 22px rgba(40,51,66,.16); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
   .legend-toggle { z-index: 24; top: var(--mobile-top); right: 12px; }.map-legend { z-index: 31; top: calc(var(--mobile-top) + 56px); right: 12px; border: 1px solid rgba(255,255,255,.72); background: rgba(255,255,255,.8); color: #364151; }
 
-<<<<<<< Updated upstream
   .area-sheet.selected { z-index: 30; top: calc(var(--mobile-top) + 174px); left: 12px; right: 12px; bottom: auto; width: auto; max-height: calc(100dvh - var(--mobile-top) - var(--mobile-dock) - 184px); padding: 12px 16px 10px; border: 1px solid rgba(255,255,255,.76); border-radius: 28px; background: rgba(255,255,255,.78); box-shadow: 0 18px 46px rgba(40,51,66,.2), inset 0 1px rgba(255,255,255,.9); backdrop-filter: blur(20px) saturate(135%); -webkit-backdrop-filter: blur(20px) saturate(135%); }
   .area-sheet.selected .sheet-handle { width: 34px; margin: -4px auto 8px; background: rgba(83,95,111,.26); }.area-sheet.selected h1 { padding-right: 40px; margin: 3px 0 6px; font-size: 1.38rem; }.area-sheet.selected .sheet-metrics { margin: 8px 0; }.area-sheet.selected .sheet-metrics div { background: rgba(246,248,250,.72); }
-=======
-  .area-sheet.selected { z-index: 30; left: 12px; right: 12px; bottom: calc(var(--mobile-dock) + 10px); width: auto; max-height: min(48dvh, 430px); padding: 18px 18px 20px; border: 1px solid rgba(255,255,255,.76); border-radius: 28px; background: rgba(255,255,255,.78); box-shadow: 0 18px 46px rgba(40,51,66,.2), inset 0 1px rgba(255,255,255,.9); backdrop-filter: blur(20px) saturate(135%); -webkit-backdrop-filter: blur(20px) saturate(135%); }
-  .area-sheet.selected .sheet-handle { width: 34px; margin: -6px auto 14px; background: rgba(83,95,111,.26); }.area-sheet.selected h1 { padding-right: 40px; font-size: 1.38rem; }.area-sheet.selected .sheet-metrics div { background: rgba(246,248,250,.72); }
->>>>>>> Stashed changes
 
   .page-heading { padding-top: 2px; }.page-heading h1 { font-size: clamp(1.75rem, 8vw, 2.15rem); }.page-heading p { max-width: 30ch; font-size: .9rem; }
   .feed-shell .page-heading { padding-bottom: 10px; }.filter-bar { position: sticky; top: -20px; z-index: 2; margin: 4px 0 16px; border-color: rgba(255,255,255,.72); background: rgba(250,251,252,.78); box-shadow: 0 8px 22px rgba(40,51,66,.1); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }.filter-bar button { min-height: 44px; }
@@ -597,11 +588,7 @@ body { font-family: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, san
   .form-section { margin: 0; padding: 18px 0; border: 0; border-bottom: 1px solid rgba(83,95,111,.13); border-radius: 0; background: transparent; box-shadow: none; }.form-section:last-of-type { border-bottom: 0; }.form-section .step { top: 16px; left: 0; width: 30px; height: 30px; border-radius: 10px; }.form-section h2 { padding-left: 40px; }.field-label input, .field-label textarea, .field-label select { border-color: rgba(83,95,111,.18); background: rgba(255,255,255,.58); }.severity-grid button { background: rgba(255,255,255,.52); }.image-drop { background: rgba(255,249,244,.62); }
   .form-submit-section, .report-form:has(.submit-bar button:enabled) .form-submit-section { position: sticky; z-index: 4; bottom: -24px; margin: 0 -16px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(250,251,252,0), rgba(250,251,252,.86) 28%); }.report-form .submit-bar { border-color: rgba(255,255,255,.76); background: rgba(255,255,255,.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 
-<<<<<<< Updated upstream
   .area-page { padding-inline: 12px; }.area-hero, .timeline-section, .area-feed { border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.62); box-shadow: 0 9px 24px rgba(40,51,66,.09); }.area-hero { padding: 48px 16px 16px; margin-bottom: 10px; }.area-hero h1 { font-size: clamp(2rem, 9vw, 2.55rem); }.area-content { gap: 10px; }.timeline-section, .area-feed { padding: 14px; }.section-heading { margin-bottom: 14px; }
-=======
-  .area-page { padding-inline: 16px; }.area-hero, .timeline-section, .area-feed { border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.62); box-shadow: 0 9px 24px rgba(40,51,66,.09); }.area-hero { padding-top: 58px; }.area-hero h1 { font-size: clamp(2rem, 9vw, 2.55rem); }
->>>>>>> Stashed changes
 }
 
 @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
