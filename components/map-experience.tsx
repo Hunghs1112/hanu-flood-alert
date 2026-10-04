@@ -343,7 +343,7 @@ export default function MapExperience({ controlsVisible = true }: { controlsVisi
           <h1>{selected.name}</h1>
           <div className="sheet-status-row"><StatusChip status={selected.status} /><span>{timeAgo(selected.latestReportAt)}</span></div>
           <div className="sheet-metrics"><div><strong>{selected.recentReporterCount}</strong><span>người báo</span></div><div><strong>{selected.recentReportCount}</strong><span>bài gần đây</span></div></div>
-          <div className="sheet-actions"><Link className="primary-button" href={`/report?area=${selected.id}`}>Cập nhật tình trạng</Link><Link className="secondary-button" href={`/area/${selected.slug}`}>Xem lịch sử</Link></div>
+          <div className="sheet-actions"><Link className="primary-button" href={`/report?area=${"areaId" in selected ? selected.areaId : selected.id}&lat=${selected.coordinates[1]}&lng=${selected.coordinates[0]}`}>Cập nhật tình trạng</Link><Link className="secondary-button" href={`/area/${selected.slug}`}>Xem lịch sử</Link></div>
         </> : pickedPoint ? <>
           <button className="sheet-close" onClick={() => { pickedMarkerRef.current?.remove(); pickedMarkerRef.current = null; pinGeocodeRef.current?.abort(); setPickedPoint(null); setPickedPlaceName(""); const map = mapRef.current; if (map) rememberReportLocation([map.getCenter().lng, map.getCenter().lat]); }} aria-label="Đóng"><X size={18} /></button>
           <div className="eyebrow"><MapPin size={14} /> ĐIỂM ĐÃ CHỌN</div>
