@@ -53,7 +53,7 @@ function toGeoJson(points: MapPointStatus[]) {
         slug: point.slug,
         name: point.name,
         status: point.status,
-        count: point.recentReporterCount,
+        count: point.recentReportCount,
         reportCount: point.recentReportCount
       }
     }))
